@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QGraphicsDropShadowEffect,
     QHBoxLayout,
+    QLabel,
     QMenu,
     QSizeGrip,
     QTextEdit,
@@ -60,6 +61,7 @@ class NoteWindow(QWidget):
         data = data or {}
         self._color_key = data.get("color", DEFAULT_COLOR)
 
+        self.setWindowTitle("Trozovka Notes")
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setMinimumSize(200, 180)
@@ -119,6 +121,12 @@ class NoteWindow(QWidget):
         self.menu_btn.setAutoRaise(True)
         self.menu_btn.clicked.connect(self._show_menu)
         layout.addWidget(self.menu_btn)
+
+        self.title_label = QLabel("Trozovka Notes", self.header)
+        title_font = QFont("Segoe UI", 8)
+        title_font.setLetterSpacing(QFont.PercentageSpacing, 105)
+        self.title_label.setFont(title_font)
+        layout.addWidget(self.title_label)
 
         layout.addStretch(1)
 
@@ -203,6 +211,7 @@ class NoteWindow(QWidget):
         )
         for btn in (self.menu_btn, self.new_btn, self.close_btn, self.bold_btn, self.italic_btn):
             btn.setStyleSheet(f"color: {colors['text']}; border: none;")
+        self.title_label.setStyleSheet(f"color: {colors['text']}; background: transparent;")
         self.body.setStyleSheet(f"background: transparent; border: none; color: {colors['text']};")
         if persist:
             self.request_save()

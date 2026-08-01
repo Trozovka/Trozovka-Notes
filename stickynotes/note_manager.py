@@ -37,7 +37,7 @@ class NoteManager:
 
     def _build_tray(self):
         self.tray = QSystemTrayIcon(_tray_icon())
-        self.tray.setToolTip("Sticky Notes")
+        self.tray.setToolTip("Trozovka Notes")
 
         menu = QMenu()
         new_action = QAction("New Note", menu)

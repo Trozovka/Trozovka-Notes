@@ -48,6 +48,18 @@ The app has no window chrome in the taskbar by design (it's a floating
 utility, like the real Sticky Notes) — use the tray icon in the notification
 area to create new notes or bring all notes to the front.
 
+### Desktop shortcut
+
+Run `create-desktop-shortcut.ps1` once from Windows PowerShell to add a
+"Trozovka Notes" icon to the Desktop — double-click it to launch the app.
+`remove-desktop-shortcut.ps1` deletes it again.
+
+This is launch-on-demand only, by design: an earlier version of this script
+registered the app to auto-launch at Windows login via the Startup folder,
+but Bitdefender's behavior blocker flagged that as malicious persistence
+and shut down the app along with everything else running alongside it
+(including WSL). A plain Desktop shortcut avoids that entirely.
+
 ## Design notes
 
 Before writing any code, existing open-source sticky-note projects were
