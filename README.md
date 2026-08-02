@@ -32,7 +32,15 @@ only float above other Linux windows — it cannot overlay native Windows
 applications. This app must be run with a **Windows** Python interpreter,
 even if the source lives on WSL.
 
-## Setup & run
+## Download
+
+Grab `Trozovka Notes.exe` from the [latest release](https://github.com/Trozovka/sticky-notes-desktop/releases/latest)
+and double-click it — no Python install required.
+
+It's an unsigned executable, so on first run Windows SmartScreen may show
+"Windows protected your PC." Click **More info → Run anyway** to launch it.
+
+## Run from source
 
 Requires Python 3.12+ **installed on Windows** (not inside WSL/Linux — see above).
 
@@ -42,6 +50,9 @@ cd sticky-notes-desktop
 pip install -r requirements.txt
 python main.py
 ```
+
+To build your own `.exe` instead of downloading the release, run
+`build-exe.ps1` — output lands in `dist\Trozovka Notes.exe`.
 
 The app has no window chrome in the taskbar by design (it's a floating
 utility, like the real Sticky Notes) — use the tray icon in the notification
