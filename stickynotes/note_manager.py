@@ -93,7 +93,15 @@ class NoteManager:
     # ---------- creating / opening ----------
     def create_note(self):
         color = self.settings.get("default_color", DEFAULT_COLOR)
-        self._add_note(data={"color": color})
+        data = {"color": color}
+        # Without an explicit position, Qt places every new note at the same
+        # default spot — cascade from whatever's currently open so a new
+        # note doesn't spawn invisibly stacked under an existing one.
+        origin = self.notes.get(self.last_active_id) or next(iter(self.notes.values()), None)
+        if origin is not None:
+            data["x"] = origin.x() + 28
+            data["y"] = origin.y() + 28
+        self._add_note(data=data)
 
     def open_note(self, note_id):
         existing = self.notes.get(note_id)
