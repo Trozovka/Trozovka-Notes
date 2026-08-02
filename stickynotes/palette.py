@@ -10,4 +10,4 @@ PALETTE = {
     "charcoal": {"body": "#3A3A3A", "header": "#2B2B2B", "text": "#F2F2F2"},
 }
 
-DEFAULT_COLOR = "green"
+DEFAULT_COLOR = "yellow"

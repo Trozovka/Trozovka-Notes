@@ -1,5 +1,6 @@
 """The individual sticky note window: frameless, always-on-top, rich text."""
 
+import time
 import uuid
 
 from PySide6.QtCore import QEvent, Qt, Signal
@@ -51,7 +52,11 @@ class _Header(QWidget):
 
 
 class NoteWindow(QWidget):
-    closed = Signal(str)
+    # Emitted when the window is closed (X, Alt+F4, etc.) — the note's data
+    # is NOT deleted, just no longer shown. See delete_requested for that.
+    window_closed = Signal(str)
+    delete_requested = Signal(str)
+    notes_list_requested = Signal()
     changed = Signal()
     new_note_requested = Signal()
 
@@ -62,10 +67,12 @@ class NoteWindow(QWidget):
         self.note_id = note_id or str(uuid.uuid4())
         data = data or {}
         self._color_key = data.get("color", DEFAULT_COLOR)
+        self._preferred_font_size = data.get("font_size", DEFAULT_FONT_SIZE)
 
         self.setWindowTitle("I ❤ FOSS")
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_DeleteOnClose)
         self.setMinimumSize(200, 180)
         self.resize(data.get("width", 260), data.get("height", 260))
         if "x" in data and "y" in data:
@@ -77,7 +84,7 @@ class NoteWindow(QWidget):
 
         if data.get("html"):
             self.body.setHtml(data["html"])
-        self._select_font_size(data.get("font_size", DEFAULT_FONT_SIZE))
+        self._select_font_size(self._preferred_font_size)
 
         self.body.textChanged.connect(self.request_save)
         self.body.cursorPositionChanged.connect(self._sync_toolbar_to_cursor)
@@ -115,18 +122,12 @@ class NoteWindow(QWidget):
 
     def _build_header(self):
         self.header = _Header(self, self.frame)
-        self.header.setFixedHeight(34)
+        self.header.setFixedHeight(40)
         layout = QHBoxLayout(self.header)
-        layout.setContentsMargins(6, 4, 6, 4)
-
-        self.menu_btn = QToolButton(self.header)
-        self.menu_btn.setText("⋮")
-        self.menu_btn.setAutoRaise(True)
-        self.menu_btn.clicked.connect(self._show_menu)
-        layout.addWidget(self.menu_btn)
+        layout.setContentsMargins(10, 4, 6, 4)
 
         self.title_label = QLabel("I ❤ FOSS", self.header)
-        title_font = QFont("Segoe UI", 8)
+        title_font = QFont("Segoe UI", 14)
         title_font.setLetterSpacing(QFont.PercentageSpacing, 105)
         self.title_label.setFont(title_font)
         layout.addWidget(self.title_label)
@@ -135,22 +136,28 @@ class NoteWindow(QWidget):
 
         self.new_btn = QToolButton(self.header)
         self.new_btn.setText("+")
-        self.new_btn.setAutoRaise(True)
-        self.new_btn.clicked.connect(self.new_note_requested.emit)
+        self.new_btn.setToolTip("New note")
         layout.addWidget(self.new_btn)
+        self.new_btn.clicked.connect(self.new_note_requested.emit)
+
+        self.notes_list_btn = QToolButton(self.header)
+        self.notes_list_btn.setText("⋯")
+        self.notes_list_btn.setToolTip("Notes list")
+        layout.addWidget(self.notes_list_btn)
+        self.notes_list_btn.clicked.connect(self.notes_list_requested.emit)
 
         self.close_btn = QToolButton(self.header)
         self.close_btn.setText("✕")
-        self.close_btn.setAutoRaise(True)
-        self.close_btn.clicked.connect(self.close)
+        self.close_btn.setToolTip("Close (the note is kept — right-click for delete)")
         layout.addWidget(self.close_btn)
+        self.close_btn.clicked.connect(self.close)
 
         return self.header
 
     def _build_toolbar(self):
         self.toolbar = QWidget(self.frame)
         layout = QHBoxLayout(self.toolbar)
-        layout.setContentsMargins(6, 2, 6, 6)
+        layout.setContentsMargins(6, 2, 6, 8)
 
         self.bold_btn = QToolButton(self.toolbar)
         self.bold_btn.setText("B")
@@ -158,7 +165,6 @@ class NoteWindow(QWidget):
         bold_font = QFont()
         bold_font.setBold(True)
         self.bold_btn.setFont(bold_font)
-        self.bold_btn.setAutoRaise(True)
         self.bold_btn.clicked.connect(self._toggle_bold)
         layout.addWidget(self.bold_btn)
 
@@ -168,16 +174,17 @@ class NoteWindow(QWidget):
         italic_font = QFont()
         italic_font.setItalic(True)
         self.italic_btn.setFont(italic_font)
-        self.italic_btn.setAutoRaise(True)
         self.italic_btn.clicked.connect(self._toggle_italic)
         layout.addWidget(self.italic_btn)
 
         layout.addSpacing(8)
 
         self.size_combo = QComboBox(self.toolbar)
+        self.size_combo.setFont(QFont("Segoe UI", 10))
         for size in FONT_SIZES:
             self.size_combo.addItem(str(size), size)
-        self.size_combo.setFixedWidth(60)
+        self.size_combo.setFixedWidth(72)
+        self.size_combo.setMinimumHeight(26)
         self.size_combo.currentIndexChanged.connect(self._apply_font_size)
         layout.addWidget(self.size_combo)
 
@@ -189,6 +196,11 @@ class NoteWindow(QWidget):
     def _enable_edge_resize(self):
         self.setMouseTracking(True)
         for widget in self.findChildren(QWidget):
+            # Buttons and the combo box handle their own clicks; letting the
+            # resize hit-test claim their edge pixels made them need two
+            # clicks to register (first click consumed as a resize attempt).
+            if isinstance(widget, (QToolButton, QComboBox)):
+                continue
             widget.setMouseTracking(True)
             widget.installEventFilter(self)
 
@@ -241,7 +253,8 @@ class NoteWindow(QWidget):
                     return True
         return super().eventFilter(obj, event)
 
-    def _show_menu(self):
+    # ---------- per-note color / delete (right-click) ----------
+    def contextMenuEvent(self, event):
         menu = QMenu(self)
         color_menu = menu.addMenu("Color")
         for key in PALETTE:
@@ -250,11 +263,17 @@ class NoteWindow(QWidget):
             color_menu.addAction(action)
         menu.addSeparator()
         delete_action = QAction("Delete Note", self)
-        delete_action.triggered.connect(self.close)
+        delete_action.triggered.connect(lambda: self.delete_requested.emit(self.note_id))
         menu.addAction(delete_action)
-        menu.exec(self.menu_btn.mapToGlobal(self.menu_btn.rect().bottomLeft()))
+        menu.exec(event.globalPos())
 
     # ---------- color ----------
+    @staticmethod
+    def _tint(hex_color, alpha):
+        hex_color = hex_color.lstrip("#")
+        r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+        return f"rgba({r}, {g}, {b}, {alpha})"
+
     def _apply_color(self, key, persist=False):
         self._color_key = key
         colors = PALETTE.get(key, PALETTE[DEFAULT_COLOR])
@@ -265,10 +284,33 @@ class NoteWindow(QWidget):
             f"background-color: {colors['header']};"
             "border-top-left-radius: 10px; border-top-right-radius: 10px;"
         )
-        for btn in (self.menu_btn, self.new_btn, self.close_btn, self.bold_btn, self.italic_btn):
-            btn.setStyleSheet(f"color: {colors['text']}; border: none;")
+
+        resting = self._tint(colors["text"], 20)
+        tint = self._tint(colors["text"], 40)
+        tint_hover = self._tint(colors["text"], 60)
+        tint_pressed = self._tint(colors["text"], 85)
+        button_qss = (
+            f"QToolButton {{ color: {colors['text']}; border: none; border-radius: 5px;"
+            f" padding: 3px 7px; background-color: {resting}; }}"
+            f"QToolButton:hover {{ background-color: {tint}; }}"
+            f"QToolButton:pressed {{ background-color: {tint_pressed}; }}"
+            f"QToolButton:checked {{ background-color: {tint_hover}; }}"
+        )
+        for btn in (self.new_btn, self.notes_list_btn, self.close_btn, self.bold_btn, self.italic_btn):
+            btn.setStyleSheet(button_qss)
+
         self.title_label.setStyleSheet(f"color: {colors['text']}; background: transparent;")
         self.body.setStyleSheet(f"background: transparent; border: none; color: {colors['text']};")
+
+        self.size_combo.setStyleSheet(
+            f"QComboBox {{ color: {colors['text']}; background-color: {tint}; border: none;"
+            f" border-radius: 5px; padding: 2px 8px; }}"
+            f"QComboBox:hover {{ background-color: {tint_hover}; }}"
+            f"QComboBox QAbstractItemView {{ background-color: white; color: #2A2A2A;"
+            f" selection-background-color: {colors['header']}; outline: none; }}"
+            f"QComboBox QAbstractItemView::item {{ padding: 6px 10px; min-height: 22px; }}"
+        )
+
         if persist:
             self.request_save()
 
@@ -278,21 +320,27 @@ class NoteWindow(QWidget):
         fmt.setFontWeight(QFont.Bold if self.bold_btn.isChecked() else QFont.Normal)
         self.body.mergeCurrentCharFormat(fmt)
         self.body.setFocus()
+        # mergeCurrentCharFormat with no selection doesn't fire textChanged,
+        # so without this, toggling bold with nothing selected wouldn't save.
+        self.request_save()
 
     def _toggle_italic(self):
         fmt = QTextCharFormat()
         fmt.setFontItalic(self.italic_btn.isChecked())
         self.body.mergeCurrentCharFormat(fmt)
         self.body.setFocus()
+        self.request_save()
 
     def _apply_font_size(self):
         size = self.size_combo.currentData()
         if size is None:
             return
+        self._preferred_font_size = size
         fmt = QTextCharFormat()
         fmt.setFontPointSize(size)
         self.body.mergeCurrentCharFormat(fmt)
         self.body.setFocus()
+        self.request_save()
 
     def _sync_toolbar_to_cursor(self):
         fmt = self.body.currentCharFormat()
@@ -302,7 +350,18 @@ class NoteWindow(QWidget):
         self.italic_btn.setChecked(fmt.fontItalic())
         self.bold_btn.blockSignals(False)
         self.italic_btn.blockSignals(False)
-        self._select_font_size(int(fmt.fontPointSize()) or DEFAULT_FONT_SIZE)
+
+        # An unset point size (0) means "inherit" — without this, landing on
+        # one (e.g. right after deleting text) made the size dropdown, and
+        # subsequently typed text, silently drop back to the base 12pt
+        # instead of whatever size the user had actually chosen.
+        size = int(fmt.fontPointSize())
+        if size <= 0:
+            size = self._preferred_font_size
+            fix_fmt = QTextCharFormat()
+            fix_fmt.setFontPointSize(size)
+            self.body.mergeCurrentCharFormat(fix_fmt)
+        self._select_font_size(size)
 
     def _select_font_size(self, size):
         idx = self.size_combo.findData(size)
@@ -327,9 +386,10 @@ class NoteWindow(QWidget):
             "y": self.y(),
             "width": self.width(),
             "height": self.height(),
-            "font_size": self.size_combo.currentData() or DEFAULT_FONT_SIZE,
+            "font_size": self._preferred_font_size,
+            "updated_at": time.time(),
         }
 
     def closeEvent(self, event):
-        self.closed.emit(self.note_id)
+        self.window_closed.emit(self.note_id)
         super().closeEvent(event)
