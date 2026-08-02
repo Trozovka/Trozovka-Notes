@@ -93,9 +93,12 @@ class NotesListPanel(QWidget):
 
         layout = QVBoxLayout(self)
 
+        top_icon_font = QFont("Segoe UI", 15)
+
         top = QHBoxLayout()
         new_btn = QToolButton()
         new_btn.setText("+")
+        new_btn.setFont(top_icon_font)
         new_btn.setToolTip("New note")
         new_btn.clicked.connect(self._new_clicked)
         top.addWidget(new_btn)
@@ -106,6 +109,7 @@ class NotesListPanel(QWidget):
 
         settings_btn = QToolButton()
         settings_btn.setText("⚙")
+        settings_btn.setFont(top_icon_font)
         settings_btn.setToolTip("Settings")
         settings_btn.clicked.connect(self._on_settings)
         top.addWidget(settings_btn)
@@ -144,6 +148,7 @@ class NotesListPanel(QWidget):
 
             delete_btn = QToolButton()
             delete_btn.setText("🗑")
+            delete_btn.setFont(QFont("Segoe UI", 13))
             delete_btn.setToolTip("Delete note")
             delete_btn.clicked.connect(lambda checked=False, nid=note_id: self._delete_clicked(nid))
             row_layout.addWidget(delete_btn)
@@ -163,8 +168,12 @@ class NotesListPanel(QWidget):
 
 
 class SettingsDialog(QDialog):
-    def __init__(self, settings, on_change, on_about):
-        super().__init__()
+    def __init__(self, settings, on_change, on_about, parent=None):
+        super().__init__(parent)
+        # NotesListPanel (the usual opener) is WindowStaysOnTopHint; without
+        # this flag too, this modal dialog could render behind it — invisible,
+        # but still blocking the whole app via its modal event loop.
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
         self.setWindowTitle("Settings")
         self._settings = dict(settings)
         self._on_change = on_change
@@ -211,8 +220,9 @@ class SettingsDialog(QDialog):
 
 
 class AboutDialog(QDialog):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
         self.setWindowTitle("About Trozovka Notes")
         self.setFixedWidth(320)
 

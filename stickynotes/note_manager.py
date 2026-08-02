@@ -183,7 +183,9 @@ class NoteManager:
         self._notes_list.activateWindow()
 
     def show_settings(self):
-        dialog = SettingsDialog(self.settings, on_change=self._on_settings_changed, on_about=self.show_about)
+        dialog = SettingsDialog(
+            self.settings, on_change=self._on_settings_changed, on_about=self.show_about, parent=self._notes_list
+        )
         dialog.exec()
 
     def _on_settings_changed(self, settings):
@@ -191,7 +193,7 @@ class NoteManager:
         self._schedule_save()
 
     def show_about(self):
-        AboutDialog().exec()
+        AboutDialog(parent=self._notes_list).exec()
 
     # ---------- tray ----------
     def _on_tray_activated(self, reason):

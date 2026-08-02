@@ -134,20 +134,25 @@ class NoteWindow(QWidget):
 
         layout.addStretch(1)
 
+        header_icon_font = QFont("Segoe UI", 15)
+
         self.new_btn = QToolButton(self.header)
         self.new_btn.setText("+")
+        self.new_btn.setFont(header_icon_font)
         self.new_btn.setToolTip("New note")
         layout.addWidget(self.new_btn)
         self.new_btn.clicked.connect(self.new_note_requested.emit)
 
         self.notes_list_btn = QToolButton(self.header)
         self.notes_list_btn.setText("⋯")
+        self.notes_list_btn.setFont(header_icon_font)
         self.notes_list_btn.setToolTip("Notes list")
         layout.addWidget(self.notes_list_btn)
         self.notes_list_btn.clicked.connect(self.notes_list_requested.emit)
 
         self.close_btn = QToolButton(self.header)
         self.close_btn.setText("✕")
+        self.close_btn.setFont(header_icon_font)
         self.close_btn.setToolTip("Close (the note is kept — right-click for delete)")
         layout.addWidget(self.close_btn)
         self.close_btn.clicked.connect(self.close)
