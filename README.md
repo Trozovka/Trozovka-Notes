@@ -34,7 +34,7 @@ even if the source lives on WSL.
 
 ## Download
 
-Grab `Trozovka Notes.exe` from the [latest release](https://github.com/Trozovka/sticky-notes-desktop/releases/latest)
+Grab `Trozovka Notes.exe` from the [latest release](https://github.com/Trozovka/Trozovka-Notes/releases/latest)
 and double-click it — no Python install required.
 
 It's an unsigned executable, so on first run Windows SmartScreen may show
@@ -45,8 +45,8 @@ It's an unsigned executable, so on first run Windows SmartScreen may show
 Requires Python 3.12+ **installed on Windows** (not inside WSL/Linux — see above).
 
 ```
-git clone https://github.com/Trozovka/sticky-notes-desktop.git
-cd sticky-notes-desktop
+git clone https://github.com/Trozovka/Trozovka-Notes.git
+cd Trozovka-Notes
 pip install -r requirements.txt
 python main.py
 ```

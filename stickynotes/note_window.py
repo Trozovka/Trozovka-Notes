@@ -62,7 +62,7 @@ class NoteWindow(QWidget):
         data = data or {}
         self._color_key = data.get("color", DEFAULT_COLOR)
 
-        self.setWindowTitle("Trozovka Notes")
+        self.setWindowTitle("I ❤ FOSS")
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setMinimumSize(200, 180)
@@ -123,7 +123,7 @@ class NoteWindow(QWidget):
         self.menu_btn.clicked.connect(self._show_menu)
         layout.addWidget(self.menu_btn)
 
-        self.title_label = QLabel("Trozovka Notes", self.header)
+        self.title_label = QLabel("I ❤ FOSS", self.header)
         title_font = QFont("Segoe UI", 8)
         title_font.setLetterSpacing(QFont.PercentageSpacing, 105)
         self.title_label.setFont(title_font)
