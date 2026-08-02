@@ -96,6 +96,10 @@ None were both properly open-source and a close feature match, so this was
 built independently. PinnyNotes' `Topmost` window approach informed the
 general architecture (not its code).
 
+## Author
+
+Trozovka
+
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Copyright (c) 2026 Trozovka.
