@@ -2,7 +2,7 @@
 
 import uuid
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QAction, QFont, QTextCharFormat
 from PySide6.QtWidgets import (
     QComboBox,
@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMenu,
-    QSizeGrip,
     QTextEdit,
     QToolButton,
     QVBoxLayout,
@@ -56,6 +55,8 @@ class NoteWindow(QWidget):
     changed = Signal()
     new_note_requested = Signal()
 
+    _RESIZE_MARGIN = 6
+
     def __init__(self, note_id=None, data=None, parent=None):
         super().__init__(parent)
         self.note_id = note_id or str(uuid.uuid4())
@@ -71,6 +72,7 @@ class NoteWindow(QWidget):
             self.move(data["x"], data["y"])
 
         self._build_ui()
+        self._enable_edge_resize()
         self._apply_color(self._color_key)
 
         if data.get("html"):
@@ -181,10 +183,63 @@ class NoteWindow(QWidget):
 
         layout.addStretch(1)
 
-        grip = QSizeGrip(self.toolbar)
-        layout.addWidget(grip, 0, Qt.AlignBottom | Qt.AlignRight)
-
         return self.toolbar
+
+    # ---------- edge/corner resize ----------
+    def _enable_edge_resize(self):
+        self.setMouseTracking(True)
+        for widget in self.findChildren(QWidget):
+            widget.setMouseTracking(True)
+            widget.installEventFilter(self)
+
+    def _edge_at(self, global_pos):
+        geo = self.geometry()
+        m = self._RESIZE_MARGIN
+        horizontal = None
+        if global_pos.x() <= geo.left() + m:
+            horizontal = Qt.LeftEdge
+        elif global_pos.x() >= geo.right() - m:
+            horizontal = Qt.RightEdge
+        vertical = None
+        if global_pos.y() <= geo.top() + m:
+            vertical = Qt.TopEdge
+        elif global_pos.y() >= geo.bottom() - m:
+            vertical = Qt.BottomEdge
+        if horizontal and vertical:
+            return horizontal | vertical
+        return horizontal or vertical
+
+    @staticmethod
+    def _cursor_for_edges(edges):
+        if not edges:
+            return None
+        top = bool(edges & Qt.TopEdge)
+        bottom = bool(edges & Qt.BottomEdge)
+        left = bool(edges & Qt.LeftEdge)
+        right = bool(edges & Qt.RightEdge)
+        if (top and left) or (bottom and right):
+            return Qt.SizeFDiagCursor
+        if (top and right) or (bottom and left):
+            return Qt.SizeBDiagCursor
+        if top or bottom:
+            return Qt.SizeVerCursor
+        return Qt.SizeHorCursor
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.MouseMove:
+            edges = self._edge_at(event.globalPosition().toPoint())
+            cursor = self._cursor_for_edges(edges)
+            if cursor is not None:
+                obj.setCursor(cursor)
+            else:
+                obj.unsetCursor()
+        elif event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
+            edges = self._edge_at(event.globalPosition().toPoint())
+            if edges:
+                window = self.windowHandle()
+                if window is not None and window.startSystemResize(edges):
+                    return True
+        return super().eventFilter(obj, event)
 
     def _show_menu(self):
         menu = QMenu(self)
