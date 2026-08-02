@@ -68,9 +68,10 @@ class NoteWindow(QWidget):
         data = data or {}
         self._color_key = data.get("color", DEFAULT_COLOR)
         self._preferred_font_size = data.get("font_size", DEFAULT_FONT_SIZE)
+        self._always_on_top = data.get("always_on_top", True)
 
         self.setWindowTitle("I ❤ FOSS")
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setWindowFlags(self._window_flags())
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setMinimumSize(200, 180)
@@ -132,9 +133,18 @@ class NoteWindow(QWidget):
         self.title_label.setFont(title_font)
         layout.addWidget(self.title_label)
 
-        layout.addStretch(1)
-
         header_icon_font = QFont("Segoe UI", 15)
+
+        self.pin_btn = QToolButton(self.header)
+        self.pin_btn.setText("📌")
+        self.pin_btn.setFont(header_icon_font)
+        self.pin_btn.setCheckable(True)
+        self.pin_btn.setChecked(self._always_on_top)
+        self.pin_btn.setToolTip("Always on top of other windows (click to turn off)")
+        layout.addWidget(self.pin_btn)
+        self.pin_btn.clicked.connect(self._toggle_pin)
+
+        layout.addStretch(1)
 
         self.new_btn = QToolButton(self.header)
         self.new_btn.setText("+")
@@ -196,6 +206,22 @@ class NoteWindow(QWidget):
         layout.addStretch(1)
 
         return self.toolbar
+
+    # ---------- always-on-top toggle ----------
+    def _window_flags(self):
+        flags = Qt.FramelessWindowHint | Qt.Tool
+        if self._always_on_top:
+            flags |= Qt.WindowStaysOnTopHint
+        return flags
+
+    def _toggle_pin(self):
+        self._always_on_top = self.pin_btn.isChecked()
+        pos, size = self.pos(), self.size()
+        self.setWindowFlags(self._window_flags())
+        self.resize(size)
+        self.move(pos)
+        self.show()
+        self.request_save()
 
     # ---------- edge/corner resize ----------
     def _enable_edge_resize(self):
@@ -301,7 +327,7 @@ class NoteWindow(QWidget):
             f"QToolButton:pressed {{ background-color: {tint_pressed}; }}"
             f"QToolButton:checked {{ background-color: {tint_hover}; }}"
         )
-        for btn in (self.new_btn, self.notes_list_btn, self.close_btn, self.bold_btn, self.italic_btn):
+        for btn in (self.pin_btn, self.new_btn, self.notes_list_btn, self.close_btn, self.bold_btn, self.italic_btn):
             btn.setStyleSheet(button_qss)
 
         self.title_label.setStyleSheet(f"color: {colors['text']}; background: transparent;")
@@ -392,6 +418,7 @@ class NoteWindow(QWidget):
             "width": self.width(),
             "height": self.height(),
             "font_size": self._preferred_font_size,
+            "always_on_top": self._always_on_top,
             "updated_at": time.time(),
         }
 

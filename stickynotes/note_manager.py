@@ -46,6 +46,9 @@ class NoteManager:
         self._save_timer.setInterval(SAVE_DEBOUNCE_MS)
         self._save_timer.timeout.connect(self._save_all)
 
+        self._settings_dialog = None
+        self._about_dialog = None
+
         self._build_tray()
 
     def _build_tray(self):
@@ -183,17 +186,29 @@ class NoteManager:
         self._notes_list.activateWindow()
 
     def show_settings(self):
-        dialog = SettingsDialog(
-            self.settings, on_change=self._on_settings_changed, on_about=self.show_about, parent=self._notes_list
-        )
-        dialog.exec()
+        # Deliberately non-modal (.show(), not .exec()): a modal dialog can
+        # end up rendered behind one of the several always-on-top note
+        # windows, invisible but still blocking input to the entire app with
+        # no way to dismiss it short of killing the process. Non-modal means
+        # that failure mode can't lock anything up even if it recurs.
+        if self._settings_dialog is None:
+            self._settings_dialog = SettingsDialog(
+                self.settings, on_change=self._on_settings_changed, on_about=self.show_about, parent=self._notes_list
+            )
+        self._settings_dialog.show()
+        self._settings_dialog.raise_()
+        self._settings_dialog.activateWindow()
 
     def _on_settings_changed(self, settings):
         self.settings.update(settings)
         self._schedule_save()
 
     def show_about(self):
-        AboutDialog(parent=self._notes_list).exec()
+        if self._about_dialog is None:
+            self._about_dialog = AboutDialog(parent=self._notes_list)
+        self._about_dialog.show()
+        self._about_dialog.raise_()
+        self._about_dialog.activateWindow()
 
     # ---------- tray ----------
     def _on_tray_activated(self, reason):
