@@ -1,4 +1,4 @@
-"""Color palette matching the real MS Sticky Notes app."""
+"""Color palette for note backgrounds."""
 
 PALETTE = {
     "yellow": {"body": "#FFF6A9", "header": "#F5E27A", "text": "#3A3A3A"},
@@ -10,4 +10,4 @@ PALETTE = {
     "charcoal": {"body": "#3A3A3A", "header": "#2B2B2B", "text": "#F2F2F2"},
 }
 
-DEFAULT_COLOR = "yellow"
+DEFAULT_COLOR = "green"

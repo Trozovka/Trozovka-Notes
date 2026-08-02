@@ -21,7 +21,8 @@ from PySide6.QtWidgets import (
 from .palette import DEFAULT_COLOR, PALETTE
 
 FONT_SIZES = [10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72]
-DEFAULT_FONT_SIZE = 14
+DEFAULT_FONT_SIZE = 12
+DEFAULT_FONT_FAMILY = "Calibri"
 
 
 class _Header(QWidget):
@@ -104,7 +105,7 @@ class NoteWindow(QWidget):
         self.body = QTextEdit(self.frame)
         self.body.setFrameShape(QFrame.NoFrame)
         self.body.setAcceptRichText(True)
-        default_font = QFont("Segoe UI", DEFAULT_FONT_SIZE)
+        default_font = QFont(DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE)
         self.body.setFont(default_font)
         frame_layout.addWidget(self.body, 1)
 

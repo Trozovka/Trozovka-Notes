@@ -1,9 +1,8 @@
-# Sticky Notes Desktop
+# Trozovka Notes
 
-A Windows desktop app that mimics Microsoft's Sticky Notes — frameless,
-always-on-top notes that float above every other window — with rich text
-formatting Microsoft's version doesn't offer: an explicit font-size dropdown
-(10–72) alongside Bold and Italic.
+A Windows desktop app for frameless, always-on-top sticky notes that float
+above every other window, with rich text formatting: an explicit font-size
+dropdown (10–72) alongside Bold and Italic.
 
 Built independently after evaluating existing open-source sticky-note
 projects (see [Design notes](#design-notes) below) — none were a clean fit
