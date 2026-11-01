@@ -98,8 +98,8 @@ general architecture (not its code).
 
 ## Author
 
-Trozovka
+**John Winsome Munar** ([Trozovka](https://github.com/Trozovka) on GitHub)
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Copyright (c) 2026 Trozovka.
+MIT — see [LICENSE](LICENSE). Copyright (c) 2026 John Winsome Munar (Trozovka).
